@@ -16,6 +16,8 @@ public class CamRotate : MonoBehaviour {
 	private Vector3 m_PivotEulers;
 	private Vector3 m_vDir;
 
+	public float m_fMinDistance;		//与物体的最短距离，为物体半径的1.5倍
+
 	// Use this for initialization
 	void Start () {
 	
@@ -27,44 +29,49 @@ public class CamRotate : MonoBehaviour {
 		k_LookDistance = m_vDir.magnitude;
 		transform.LookAt(m_Target);  		     
 		m_PivotEulers = Quaternion.Inverse(transform.rotation).eulerAngles ;
-
+		MeshFilter mf = m_Target.GetComponent<MeshFilter>();
+		m_fMinDistance = mf.mesh.bounds.size.x*1.5f/2f;
     }
 
 	// Update is called once per frame
 	void Update () {
-		HandleRotationMovement();
+		HandleCamera();
 	}
 
-
-	 private void HandleRotationMovement()
-    {
-		if(Time.timeScale < float.Epsilon || !Input.GetMouseButton(1))
+	private void HandleCamera()
+	{
+		if(Time.timeScale < float.Epsilon)
 			return;
 
-        // Read the user input
-        var x = Input.GetAxis("Mouse X")*m_TurnSpeed;
-        var y = Input.GetAxis("Mouse Y")*m_TurnSpeed;
+		var z = Input.GetAxis("Mouse ScrollWheel")/20+1;
+
+		m_vDir *= z;
+
+		if(Input.GetMouseButton(1))
+		{
+			// Read the user input
+			var x = Input.GetAxis("Mouse X")*m_TurnSpeed;
+			var y = Input.GetAxis("Mouse Y")*m_TurnSpeed;
 
 
-        // Adjust the look angle by an amount proportional to the turn speed and horizontal input.
-        m_LookAngle = m_PivotEulers.y + 0;
-        // on platforms with a mouse, we adjust the current angle based on Y mouse input and turn speed
-        m_TiltAngle = m_PivotEulers.x - 0;
-        // and make sure the new value is within the tilt range
-        m_TiltAngle = Mathf.Clamp(m_TiltAngle, -m_TiltMin, m_TiltMax);
+			// Adjust the look angle by an amount proportional to the turn speed and horizontal input.
+			m_LookAngle = m_PivotEulers.y + 0;
+			// on platforms with a mouse, we adjust the current angle based on Y mouse input and turn speed
+			m_TiltAngle = m_PivotEulers.x - 0;
+			// and make sure the new value is within the tilt range
+			m_TiltAngle = Mathf.Clamp(m_TiltAngle, -m_TiltMin, m_TiltMax);
 
 
-		m_vDir = Quaternion.Euler(y, x, 0) * m_vDir;
-		m_vDir = m_vDir.normalized * k_LookDistance;
+			m_vDir = Quaternion.Euler(y, x, 0) * m_vDir;
+			m_vDir = m_vDir.normalized * m_vDir.magnitude;
+		}
 
 		if (m_TurnSmoothing > 0)
-		{
 			transform.position = Vector3.Lerp(transform.position, m_vDir, m_TurnSmoothing * Time.deltaTime);
-		}
 		else
-		{
 			transform.position = m_vDir;
-		}
+
 		transform.LookAt(m_Target);	
-    }
+		
+	}
 }
