@@ -37,7 +37,7 @@ public class CamRotate:MonoBehaviour {
 			return; 
 
 		var z = Input.GetAxis("Mouse ScrollWheel")/20 + 1; 
-
+		z = (Input.GetKey(KeyCode.UpArrow)?-1:0)*0.05F + (Input.GetKey(KeyCode.DownArrow)?1:0)*0.05F + 1;
 		m_vDir *= z; 
 
 		if (Input.GetMouseButton(1)) {
@@ -85,18 +85,19 @@ public class CamRotate:MonoBehaviour {
 
 			m_LookAngle += x;
 			m_TiltAngle += y;
+			m_TiltAngle = Mathf.Clamp(m_TiltAngle, -89, 89);
 
 			float fArcTilt = Angle2Arc(m_TiltAngle);
 			float fArcLook = Angle2Arc(m_LookAngle);
-			float fPosY = Mathf.Sin(fArcTilt);
-			float fPosXZ = Mathf.Cos(fArcTilt);
-			float fPosZ = Mathf.Cos(fArcLook);
-			float fPosX = Mathf.Sin(fArcLook);
+			float fPosY = Mathf.Sin(fArcTilt) * m_vDir.magnitude;
+			float fPosXZ = Mathf.Cos(fArcTilt) * m_vDir.magnitude;
+			float fPosZ = Mathf.Cos(fArcLook)* fPosXZ;
+			float fPosX = Mathf.Sin(fArcLook)* fPosXZ;
 
-			m_vDir = new Vector3(fPosX, fPosY, fPosZ).normalized * m_vDir.magnitude;
+			m_vDir = new Vector3(fPosX, fPosY, fPosZ);
 	}
 
-	float Angle2Arc(float _fAngle)
+	static public float Angle2Arc(float _fAngle)
 	{
 		return _fAngle*Mathf.PI/180;
 	}
