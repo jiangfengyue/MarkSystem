@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using Mono.Xml;
 using System.Security;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class MarkManage : MonoBehaviour {
 	private struct MarkStyle{
@@ -20,13 +22,17 @@ public class MarkManage : MonoBehaviour {
 		public string sStyleId;
 		public string sAltitudeMode;
 		public Vector3 vPos;
+		public GameObject goSat;
 
 	}
-	private List<MarkStyle> m_listMarkStyle = new List<MarkStyle>();
+//	private List<MarkStyle> m_listMarkStyle = new List<MarkStyle>();
+	private Hashtable m_htMarkStyle = new Hashtable();
 	private List<SatelliteInfo> m_listSatInfo = new List<SatelliteInfo>();
 	private const float m_fEarthRadius = 6371.004F;	//以千米为单位
-
+	public Camera m_MainCam;
 	public GameObject m_SatPrefab = null;
+	private int m_iSatNum = 0;
+	private Vector2 m_v2CanvasRect;
 	void LoadData()
 	{
 		SecurityParser SP = new SecurityParser();
@@ -79,7 +85,8 @@ public class MarkManage : MonoBehaviour {
 									ms.fIconScale = float.Parse( seContent.Text );
 							}
 					}
-					m_listMarkStyle.Add(ms);
+//					m_listMarkStyle.Add(ms);
+					m_htMarkStyle.Add(ms.sId, ms);
 					break;
 				case "Folder":
 //					foreach (SecurityElement seFolder in child.Children)
@@ -146,8 +153,8 @@ public class MarkManage : MonoBehaviour {
 															break;
 													}
 												}
+												si.goSat = AddMark(si);
 												m_listSatInfo.Add(si);
-												AddMark(si);
 												break;
 											default:
 												break;											
@@ -164,43 +171,46 @@ public class MarkManage : MonoBehaviour {
 					break;
 			}
 		}
+		m_iSatNum = m_listSatInfo.Count;
 	}
 	// Use this for initialization
 	void Start () {
 		LoadData();
-/*		SecurityParser SP = new SecurityParser();
-		
-
-		// Unity用Resources读取资源不需要后缀名，且文件夹斜杠不需要双写
-//		string xmlPath = "data/Satellites";
-
-		string ss = Resources.Load( "data/22" ).ToString();
-		SP.LoadXml(ss);
-		Debug.Log(ss);
-		SecurityElement seKml = SP.ToXml();	// kml
-		SecurityElement seDoc = (SecurityElement)seKml.Children[0];
-		byte r = 0;
-		byte g = 0;
-        byte b = 0;
-		byte a = 0;
-		string sGroupName = null;
-		string sCompanyName = null;
-*/
-
-		
+		if(m_MainCam==null)
+			m_MainCam = GameObject.Find("Main Camera").GetComponent<Camera>();
+		m_v2CanvasRect.Set(transform.parent.GetComponent<RectTransform>().rect.width*2, transform.parent.GetComponent<RectTransform>().rect.height*2);
 	}
 	
 	// Update is called once per frame
 	void Update () {
-	
+		Vector3 vPos;
+		float fDis;
+
+		for(int i=0; i<m_iSatNum; i++)
+		{
+			vPos = m_MainCam.WorldToScreenPoint(m_listSatInfo[i].vPos); //每个卫星在屏幕上的位置
+			fDis = vPos.z;
+			vPos.Set(vPos.x, vPos.y, 0);
+			if(Mathf.Abs(vPos.x)<m_v2CanvasRect.x && Mathf.Abs(vPos.y)<m_v2CanvasRect.y)
+			{
+				m_listSatInfo[i].goSat.SetActive(true);
+				m_listSatInfo[i].goSat.transform.position = vPos;
+				fDis = Mathf.Clamp(10000/fDis,0.1F,1F);
+				m_listSatInfo[i].goSat.transform.localScale = Vector3.one * fDis;
+			}
+			else
+				m_listSatInfo[i].goSat.SetActive(false);
+		}
 	}
 	
-	void AddMark(SatelliteInfo _si)
+	GameObject AddMark(SatelliteInfo _si)
 	{
 		GameObject go = GameObject.Instantiate(m_SatPrefab);
 		MarkInfo info = go.GetComponent<MarkInfo>();
-//		Image img = go.GetComponent<Image>();
+		Image img = go.GetComponent<Image>();
+		img.color = ((MarkStyle)m_htMarkStyle[_si.sStyleId]).clrLabel;
 		info.m_fSatPos = _si.vPos;
 		go.transform.SetParent(transform);
+		return go;
 	}
 }

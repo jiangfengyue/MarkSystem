@@ -20,7 +20,7 @@ public class MarkInfo : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-
+/*
 		transform.position = m_MainCam.WorldToScreenPoint(m_fSatPos);
 		m_fOrder = transform.position.z;
 		float fScale = Mathf.Clamp(10000/m_fOrder,0.1F,1F);
@@ -28,7 +28,7 @@ public class MarkInfo : MonoBehaviour {
 
 		transform.position=new Vector3(transform.position.x, transform.position.y, 0);
 		transform.localScale = Vector3.one * fScale;
-
+*/
 //		transform.position = m_fSatPos;
 	}
 }
