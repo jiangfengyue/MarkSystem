@@ -32,7 +32,8 @@ public class MarkManage : MonoBehaviour {
 	public Camera m_MainCam;
 	public GameObject m_SatPrefab = null;
 	private int m_iSatNum = 0;
-	private Vector2 m_v2CanvasRect;
+	public float m_fScale = 30.0F;	//在世界坐标模式下，对标注的缩放
+	Canvas m_Canvas;
 	void LoadData()
 	{
 		SecurityParser SP = new SecurityParser();
@@ -178,11 +179,105 @@ public class MarkManage : MonoBehaviour {
 		LoadData();
 		if(m_MainCam==null)
 			m_MainCam = GameObject.Find("Main Camera").GetComponent<Camera>();
-		m_v2CanvasRect.Set(transform.parent.GetComponent<RectTransform>().rect.width*2, transform.parent.GetComponent<RectTransform>().rect.height*2);
+		m_Canvas = transform.parent.GetComponent<Canvas>();
 	}
 	
+	bool IsInRange(float _f, float _fMin, float _fMax)
+	{
+		return _f>_fMin && _f<_fMax;
+	}
 	// Update is called once per frame
 	void Update () {
+/*		Transform t = transform.GetChild(0);
+		MarkInfo mi = t.GetComponent<MarkInfo>();
+
+			Vector3 vPos = m_MainCam.WorldToScreenPoint(mi.m_fSatPos);
+			Vector3 vCam2Sat = mi.m_fSatPos - m_MainCam.transform.position;
+			float fDis = vCam2Sat.magnitude;
+			Vector2 vP = new Vector2();
+			if(IsInRange(vPos.x,0,Screen.width) && IsInRange(vPos.y, 0, Screen.height) && vPos.z>0)	//判断是否在视域内
+			{
+				if(!IsInRange(Vector3.Angle(m_MainCam.transform.position,mi.m_fSatPos), 90, 270) )
+				{
+					t.gameObject.SetActive(true);
+					t.position=new Vector3(vPos.x, vPos.y, 0);
+					vP.Set(Vector3.Angle(-m_MainCam.transform.position, vCam2Sat),Mathf.Asin(700/m_MainCam.transform.position.magnitude)*180F/Mathf.PI);;
+				}
+				else if(Vector3.Angle(-m_MainCam.transform.position, vCam2Sat)<Mathf.Asin(700/m_MainCam.transform.position.magnitude)*180F/Mathf.PI)
+					t.gameObject.SetActive(false);
+				else{
+					t.gameObject.SetActive(true);
+					t.position=new Vector3(vPos.x, vPos.y, 0);
+					vP.Set(Vector3.Angle(-m_MainCam.transform.position, vCam2Sat),Mathf.Asin(700/m_MainCam.transform.position.magnitude)*180F/Mathf.PI);;
+				}
+			}
+			else
+			{
+				t.gameObject.SetActive(false);
+				Debug.Log(false);
+			}
+			*/
+		switch(m_Canvas.renderMode)
+		{
+			case RenderMode.ScreenSpaceOverlay:
+				ScreenSpaceUpdate();
+				break;
+			case RenderMode.WorldSpace:
+				WorldSpaceUpdate();
+				break;
+		}
+	}
+	
+	void ScreenSpaceUpdate()
+	{
+		Vector3 vScreenPos;
+		float fDis, fCamDis = m_MainCam.transform.position.magnitude;
+		Vector3 vCam2Sat;
+
+		for(int i=0; i<m_iSatNum; i++)
+		{
+			vScreenPos = m_MainCam.WorldToScreenPoint(m_listSatInfo[i].vPos);	//转换的屏幕坐标范围从0到Screen.width；z值表示深度，约等于摄像机与目标的距离，若为负，则表示在摄像机后面
+			vCam2Sat = m_listSatInfo[i].vPos - m_MainCam.transform.position;
+			fDis = vScreenPos.z;
+			vScreenPos.Set(vScreenPos.x, vScreenPos.y, 0);
+			if(IsInRange(vScreenPos.x,0,Screen.width) && IsInRange(vScreenPos.y, 0, Screen.height) && fDis>0)
+			{
+				if(fCamDis<18000F)		//摄像机距地球>18000时，地球完全被卫星遮住，不需要判断是否地球遮挡卫星
+				{
+					if(!IsInRange(Vector3.Angle(m_MainCam.transform.position,m_listSatInfo[i].vPos), 90, 270) )	//判断标注矢量与摄像机矢量之间的夹角是否大于90
+					{
+						m_listSatInfo[i].goSat.SetActive(true);
+						m_listSatInfo[i].goSat.transform.position = vScreenPos;
+						fDis = Mathf.Clamp(10000/fDis,0.1F,1F);
+						m_listSatInfo[i].goSat.transform.localScale = Vector3.one * fDis;
+					}
+					else if(Vector3.Angle(-m_MainCam.transform.position, vCam2Sat)<Mathf.Asin(750/m_MainCam.transform.position.magnitude)*180F/Mathf.PI)  //判断摄像机到标注的矢量与摄像机到球心的矢量夹角是否小于地球的半径角
+						m_listSatInfo[i].goSat.SetActive(false);
+					else
+					{
+						m_listSatInfo[i].goSat.SetActive(true);
+						m_listSatInfo[i].goSat.transform.position = vScreenPos;
+						fDis = Mathf.Clamp(10000/fDis,0.1F,1F);
+						m_listSatInfo[i].goSat.transform.localScale = Vector3.one * fDis;				
+					}
+				}
+				else
+				{
+					m_listSatInfo[i].goSat.SetActive(true);
+					m_listSatInfo[i].goSat.transform.position = vScreenPos;
+					fDis = Mathf.Clamp(10000/fDis,0.1F,1F);
+					m_listSatInfo[i].goSat.transform.localScale = Vector3.one * fDis;					
+				}
+
+			}
+			else
+				m_listSatInfo[i].goSat.SetActive(false);
+		}
+	}
+
+	void WorldSpaceUpdate()
+	{
+
 		Vector3 vPos;
 		float fDis;
 
@@ -190,19 +285,20 @@ public class MarkManage : MonoBehaviour {
 		{
 			vPos = m_MainCam.WorldToScreenPoint(m_listSatInfo[i].vPos); //每个卫星在屏幕上的位置
 			fDis = vPos.z;
-			vPos.Set(vPos.x, vPos.y, 0);
-			if(Mathf.Abs(vPos.x)<m_v2CanvasRect.x && Mathf.Abs(vPos.y)<m_v2CanvasRect.y)
+			if(IsInRange(vPos.x,0,Screen.width) && IsInRange(vPos.y, 0, Screen.height) && fDis>0)
 			{
 				m_listSatInfo[i].goSat.SetActive(true);
-				m_listSatInfo[i].goSat.transform.position = vPos;
-				fDis = Mathf.Clamp(10000/fDis,0.1F,1F);
-				m_listSatInfo[i].goSat.transform.localScale = Vector3.one * fDis;
+				m_listSatInfo[i].goSat.transform.position = m_listSatInfo[i].vPos;
+				vPos = m_MainCam.transform.position-m_listSatInfo[i].vPos;
+				m_listSatInfo[i].goSat.transform.rotation = Quaternion.LookRotation(vPos, Vector3.Cross(vPos, Vector3.Cross(m_MainCam.transform.up,vPos)));
+				m_listSatInfo[i].goSat.transform.localScale = Vector3.one * m_fScale;
+
 			}
 			else
 				m_listSatInfo[i].goSat.SetActive(false);
 		}
+
 	}
-	
 	GameObject AddMark(SatelliteInfo _si)
 	{
 		GameObject go = GameObject.Instantiate(m_SatPrefab);
@@ -211,6 +307,7 @@ public class MarkManage : MonoBehaviour {
 		img.color = ((MarkStyle)m_htMarkStyle[_si.sStyleId]).clrLabel;
 		info.m_fSatPos = _si.vPos;
 		go.transform.SetParent(transform);
+		go.transform.position = _si.vPos;
 		return go;
 	}
 }

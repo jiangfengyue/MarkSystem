@@ -10,25 +10,85 @@ public class MarkInfo : MonoBehaviour {
 
 	Image m_Image;
 	public float m_fOrder;
+
+	public bool isRendering=false;  
+    private float lastTime=0;  
+    private float curtTime=0;  
 	// Use this for initialization
 	void Start () {
 		if(m_MainCam==null)
 			m_MainCam = GameObject.Find("Main Camera").GetComponent<Camera>();
-		m_Image = transform.GetComponent<Image>();
-//		m_fSatPos = new Vector3(m_MainCam.GetComponent<CamRotate>().m_fMinDistance, m_MainCam.GetComponent<CamRotate>().m_fMinDistance, m_MainCam.GetComponent<CamRotate>().m_fMinDistance);
+
 	}
 	
 	// Update is called once per frame
 	void Update () {
+
+
+
+//		transform.position = m_fSatPos;
+
+		//在Canvas为WorldSpace时调用
+//		WorldSpaceUpdate();
+//		ScreenSpaceUpdate();
+	}
+
+
+    void OnWillRenderObject()  
+    {  
+        curtTime=Time.time;  
+    }  
+
+	void WorldSpaceUpdate()
+	{
+//		isRendering=curtTime!=lastTime?true:false;  
+        lastTime=curtTime;  
 /*
+//		if(isRendering)
+		{
+			Vector3 v = m_MainCam.transform.position-transform.position;
+			transform.rotation = Quaternion.LookRotation(v, m_MainCam.transform.up);
+//			transform.localScale = Vector3.one*v.magnitude/0.3F;
+		}
+		else
+		{
+			isRendering = isRendering;
+		}*/
+	}
+
+	public void ScreenSpaceUpdate()
+	{
 		transform.position = m_MainCam.WorldToScreenPoint(m_fSatPos);
 		m_fOrder = transform.position.z;
-		float fScale = Mathf.Clamp(10000/m_fOrder,0.1F,1F);
+			Vector3 vPos = transform.position;
+			float fDis;
+			if(Mathf.Abs(vPos.x)<Screen.width && Mathf.Abs(vPos.y)<Screen.height)
+			{
+				transform.gameObject.SetActive(true);
+				Debug.Log(true);
+			}
+			else
+			{
+				transform.gameObject.SetActive(false);
+				Debug.Log(false);
+			}
+
+
+
+
+//		float fScale = Mathf.Clamp(10000/m_fOrder,0.1F,1F);
 //		m_Image.color = new Color(m_Image.color.r, m_Image.color.g, m_Image.color.b, fScale);
 
 		transform.position=new Vector3(transform.position.x, transform.position.y, 0);
-		transform.localScale = Vector3.one * fScale;
-*/
-//		transform.position = m_fSatPos;
+//		transform.localScale = Vector3.one * fScale;
 	}
+	void OnBecameVisible(){
+	//可见状态下你要执行 的东西
+		isRendering = true;
+	}
+	void OnBecameInvisible(){
+	//不可见状态下你要执行的东西
+		isRendering = false;
+	}
+
 }
