@@ -7,7 +7,7 @@ public class CamRotate:MonoBehaviour {
 
 	private float m_LookAngle;                    // The rig's y axis rotation.
 	private float m_TiltAngle; // The pivot's x axis rotation.
-    private float k_LookDistance = 100f;    // How far in front of the pivot the character's look target is.
+
 	private Vector3 m_vDir; 
 
 	public float m_fMinDistance; 		//与物体的最短距离，为物体半径的1.5倍
@@ -19,7 +19,6 @@ public class CamRotate:MonoBehaviour {
 	
     protected void Awake() {
 		m_vDir = transform.position - m_Target.position; 
-		k_LookDistance = m_vDir.magnitude; 
 		transform.LookAt(m_Target); 	
 		m_TiltAngle = 90 - Vector3.Angle(m_vDir, Vector3.up);
 		m_LookAngle = Vector3.Angle(Vector3.Cross(Vector3.up, Vector3.Cross(m_vDir, Vector3.up)) ,Vector3.forward);

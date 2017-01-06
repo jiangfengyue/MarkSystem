@@ -12,8 +12,7 @@ public class MarkInfo : MonoBehaviour {
 	public float m_fOrder;
 
 	public bool isRendering=false;  
-    private float lastTime=0;  
-    private float curtTime=0;  
+
 	// Use this for initialization
 	void Start () {
 		if(m_MainCam==null)
@@ -34,15 +33,9 @@ public class MarkInfo : MonoBehaviour {
 	}
 
 
-    void OnWillRenderObject()  
-    {  
-        curtTime=Time.time;  
-    }  
-
 	void WorldSpaceUpdate()
 	{
 //		isRendering=curtTime!=lastTime?true:false;  
-        lastTime=curtTime;  
 /*
 //		if(isRendering)
 		{
@@ -61,7 +54,6 @@ public class MarkInfo : MonoBehaviour {
 		transform.position = m_MainCam.WorldToScreenPoint(m_fSatPos);
 		m_fOrder = transform.position.z;
 			Vector3 vPos = transform.position;
-			float fDis;
 			if(Mathf.Abs(vPos.x)<Screen.width && Mathf.Abs(vPos.y)<Screen.height)
 			{
 				transform.gameObject.SetActive(true);
