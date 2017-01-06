@@ -336,7 +336,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_MainCam: {fileID: 0}
-  m_SatPrefab: {fileID: 1000012988632608, guid: a19aa25e98cfa524397f645872966eec,
+  m_SatPrefab: {fileID: 1000014241210206, guid: a19aa25e98cfa524397f645872966eec,
     type: 2}
   m_fScale: 30
   m_iMarkLevel: 3
@@ -576,7 +576,6 @@ GameObject:
   - 92: {fileID: 1462398648}
   - 81: {fileID: 1462398647}
   - 114: {fileID: 1462398646}
-  - 114: {fileID: 1462398652}
   - 114: {fileID: 1462398651}
   m_Layer: 0
   m_Name: Main Camera
@@ -679,18 +678,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41d05695590ca31418a37ea50a92b0b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1462398652
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1462398644}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 779286cc6efcf12489dae53e41635bad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  skin: {fileID: 0}
 --- !u!1 &1672308752
 GameObject:
   m_ObjectHideFlags: 0
@@ -892,8 +879,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_fSatPos: {x: 0, y: 0, z: 0}
   m_MainCam: {fileID: 0}
-  m_fOrder: 0
-  isRendering: 0
 --- !u!114 &1875813205
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -426,6 +426,9 @@ public class MarkManage : MonoBehaviour {
 		go.transform.position = _si.vPos;
 		if(_si.vPos.magnitude>m_fMaxMark2Earth)
 			m_fMaxMark2Earth = _si.vPos.magnitude;
+		Transform tr = go.transform.GetChild(0);	//Text
+		Text text = tr.GetComponent<Text>();
+		text.text = _si.sId;
 		return go;
 	}
 }
