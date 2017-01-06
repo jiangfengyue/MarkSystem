@@ -33,7 +33,15 @@ public class MarkManage : MonoBehaviour {
 	public GameObject m_SatPrefab = null;
 	private int m_iSatNum = 0;
 	public float m_fScale = 30.0F;	//在世界坐标模式下，对标注的缩放
+	private float m_fMaxMark2Earth = 0;	//卫星到地球的最远距离
 	Canvas m_Canvas;
+	struct MarkDis{
+		public GameObject go;
+		public float fDis;
+	}
+	private List<List<MarkDis>> m_listMarkLevels = new List<List<MarkDis>>();
+	private List<MarkDis> m_listVisibleMark = new List<MarkDis>();
+	public int m_iMarkLevel = 3;
 	void LoadData()
 	{
 		SecurityParser SP = new SecurityParser();
@@ -86,13 +94,10 @@ public class MarkManage : MonoBehaviour {
 									ms.fIconScale = float.Parse( seContent.Text );
 							}
 					}
-//					m_listMarkStyle.Add(ms);
 					m_htMarkStyle.Add(ms.sId, ms);
 					break;
 				case "Folder":
-//					foreach (SecurityElement seFolder in child.Children)
 					{
-
 						foreach (SecurityElement seFolderSubContent in child.Children)
 						{
 							switch(seFolderSubContent.Tag)
@@ -186,6 +191,7 @@ public class MarkManage : MonoBehaviour {
 	{
 		return _f>_fMin && _f<_fMax;
 	}
+
 	// Update is called once per frame
 	void Update () {
 /*		Transform t = transform.GetChild(0);
@@ -228,10 +234,17 @@ public class MarkManage : MonoBehaviour {
 		}
 	}
 	
+
 	void ScreenSpaceUpdate()
 	{
+		//初始化清空层次列表
+		for(int i=0; i<m_iMarkLevel; i++)
+		{
+			m_listMarkLevels.Add(new List<MarkDis>());
+		}
+
 		Vector3 vScreenPos;
-		float fDis, fCamDis = m_MainCam.transform.position.magnitude;
+		float fDis, fScale, fCamDis = m_MainCam.transform.position.magnitude;
 		Vector3 vCam2Sat;
 
 		for(int i=0; i<m_iSatNum; i++)
@@ -248,8 +261,8 @@ public class MarkManage : MonoBehaviour {
 					{
 						m_listSatInfo[i].goSat.SetActive(true);
 						m_listSatInfo[i].goSat.transform.position = vScreenPos;
-						fDis = Mathf.Clamp(10000/fDis,0.1F,1F);
-						m_listSatInfo[i].goSat.transform.localScale = Vector3.one * fDis;
+						fScale = Mathf.Clamp(10000/fDis,0.1F,1F);
+						m_listSatInfo[i].goSat.transform.localScale = Vector3.one * fScale;
 					}
 					else if(Vector3.Angle(-m_MainCam.transform.position, vCam2Sat)<Mathf.Asin(750/m_MainCam.transform.position.magnitude)*180F/Mathf.PI)  //判断摄像机到标注的矢量与摄像机到球心的矢量夹角是否小于地球的半径角
 						m_listSatInfo[i].goSat.SetActive(false);
@@ -257,24 +270,127 @@ public class MarkManage : MonoBehaviour {
 					{
 						m_listSatInfo[i].goSat.SetActive(true);
 						m_listSatInfo[i].goSat.transform.position = vScreenPos;
-						fDis = Mathf.Clamp(10000/fDis,0.1F,1F);
-						m_listSatInfo[i].goSat.transform.localScale = Vector3.one * fDis;				
+						fScale = Mathf.Clamp(10000/fDis,0.1F,1F);
+						m_listSatInfo[i].goSat.transform.localScale = Vector3.one * fScale;				
 					}
 				}
 				else
 				{
 					m_listSatInfo[i].goSat.SetActive(true);
 					m_listSatInfo[i].goSat.transform.position = vScreenPos;
-					fDis = Mathf.Clamp(10000/fDis,0.1F,1F);
-					m_listSatInfo[i].goSat.transform.localScale = Vector3.one * fDis;					
+					fScale = Mathf.Clamp(10000/fDis,0.1F,1F);
+					m_listSatInfo[i].goSat.transform.localScale = Vector3.one * fScale;					
 				}
 
 			}
 			else
 				m_listSatInfo[i].goSat.SetActive(false);
+			
+			if(m_listSatInfo[i].goSat.activeSelf)
+			{
+				MarkDis md = new MarkDis();
+				md.go = m_listSatInfo[i].goSat;
+				md.fDis = fDis;
+				m_listVisibleMark.Add(md);
+			}
+		}
+
+		SortMarks();
+	}
+
+	void SortMarks()
+	{
+		int iDealMaxLevel = 3;//m_listMarkLevels.Count;
+		int iVisibleNum = m_listVisibleMark.Count;
+		int i, iLevel;
+		float fDisStep = (m_MainCam.transform.position.magnitude + m_fMaxMark2Earth)/m_iMarkLevel;
+		for(i=0; i<iVisibleNum; i++)
+		{
+			iLevel = (int)(m_listVisibleMark[i].fDis/fDisStep);
+			if(iLevel<=iDealMaxLevel)
+			{
+				InsertMarksAt(iLevel, m_listVisibleMark[i]);
+			}
+			else
+				m_listMarkLevels[iLevel].Add(m_listVisibleMark[i]);
+		}
+
+		m_listVisibleMark.Clear();
+		ReOrderInSystem();
+
+		if(m_listMarkLevels.Count>0)
+		{
+			for(i=0; i<m_listMarkLevels.Count; i++)
+				m_listMarkLevels[i].Clear();
+		}
+		m_listMarkLevels.Clear();
+	}
+
+	void InsertMarksAt(int _iLevel, MarkDis _md)
+	{
+		int iCount = m_listMarkLevels[_iLevel].Count;
+		if(iCount==0)
+		{
+			m_listMarkLevels[_iLevel].Add(_md);
+			return;
+		}
+/*		//冒泡遍历排序
+		int i = 0;
+		
+		
+		while(i<iCount)
+		{
+			if(_md.fDis>m_listMarkLevels[_iLevel][i].fDis)
+				break;
+			i++;
+		}
+		if(i==iCount)
+			m_listMarkLevels[_iLevel].Add(_md);
+		else
+			m_listMarkLevels[_iLevel].Insert(i, _md);	
+*/
+		//二分法排序
+		int iLow = 0;
+		int iHigh = iCount-1;
+		int iMid = (iLow+iHigh)/2;
+
+		while(iMid!=iLow && iMid!=iHigh)
+		{
+			if(_md.fDis>=m_listMarkLevels[_iLevel][iMid].fDis)
+				iHigh = iMid;
+			else
+				iLow = iMid;
+
+			iMid = (iLow+iHigh)/2;
+		}
+
+		if(_md.fDis>=m_listMarkLevels[_iLevel][iMid].fDis)
+		{
+			m_listMarkLevels[_iLevel].Insert(iMid, _md);
+		}
+		else
+		{
+			if(iMid==iCount-1)
+				m_listMarkLevels[_iLevel].Add(_md);
+			else
+				m_listMarkLevels[_iLevel].Insert(iMid+1, _md);
 		}
 	}
 
+	void ReOrderInSystem()
+	{
+		int i, j;
+		int iLevelCount = m_listMarkLevels.Count;
+		int iMarkNum;
+		for(i=iLevelCount-1; i>-1; i--)
+		{
+			iMarkNum = m_listMarkLevels[i].Count;
+			for(j=0; j<iMarkNum; j++)
+			{
+				m_listMarkLevels[i][j].go.transform.SetAsLastSibling();
+			}
+		}
+	}
 	void WorldSpaceUpdate()
 	{
 
@@ -308,6 +424,8 @@ public class MarkManage : MonoBehaviour {
 		info.m_fSatPos = _si.vPos;
 		go.transform.SetParent(transform);
 		go.transform.position = _si.vPos;
+		if(_si.vPos.magnitude>m_fMaxMark2Earth)
+			m_fMaxMark2Earth = _si.vPos.magnitude;
 		return go;
 	}
 }
